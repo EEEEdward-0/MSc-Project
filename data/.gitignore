@@ -1,0 +1,7 @@
+raw/**
+processed/**/*.csv
+processed/**/*.parquet
+!processed/splits/*.csv
+!processed/text/*.csv
+!processed/blends/*.csv
+!meta/**

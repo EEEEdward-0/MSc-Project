@@ -1,0 +1,8 @@
+{
+  "target_share": 0.15,
+  "thr_prevalence": 0.9492574257425742,
+  "thr_used": 0.9492574257425742,
+  "test_rows": 3077,
+  "test_high_cnt": 1338,
+  "test_high_share": 0.43483912902177446
+}

@@ -1,0 +1,54 @@
+{
+  "n_dev": 12308,
+  "n_test": 3077,
+  "features": [
+    "text_mean_prob",
+    "text_max_prob",
+    "text_frac_sensitive",
+    "text_n_comments"
+  ],
+  "dropped_single_auc": [],
+  "cv": [
+    {
+      "fold": 0,
+      "auc": 0.5,
+      "prauc": 0.7883834281072299,
+      "brier": 0.16683500182459784
+    },
+    {
+      "fold": 1,
+      "auc": 0.5,
+      "prauc": 0.7883834281072299,
+      "brier": 0.16683500182459784
+    },
+    {
+      "fold": 2,
+      "auc": 0.5,
+      "prauc": 0.7883834281072299,
+      "brier": 0.16683500182459787
+    },
+    {
+      "fold": 3,
+      "auc": 0.5,
+      "prauc": 0.7887037789516457,
+      "brier": 0.1666502448745176
+    },
+    {
+      "fold": 4,
+      "auc": 0.5,
+      "prauc": 0.7882974400650142,
+      "brier": 0.1668846136250116
+    }
+  ],
+  "cv_overall": {
+    "auc": 0.49980515818140137,
+    "prauc": 0.7883627151750725,
+    "brier": 0.1668079793828259
+  },
+  "sanity": {
+    "shuffled_auc": 0.48268036887254434,
+    "adversarial_auc": 0.5
+  },
+  "rounds_full": 200,
+  "calibrated": false
+}

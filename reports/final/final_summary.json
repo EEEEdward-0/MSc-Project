@@ -1,0 +1,9 @@
+{
+  "threshold_conservative": 0.935897435897436,
+  "n_test": 3077,
+  "n_pred_high": 1492,
+  "share_pred_high": 0.4848878778030549,
+  "files": {
+    "test_pred_conservative": "reports/final/test_pred_conservative.csv"
+  }
+}

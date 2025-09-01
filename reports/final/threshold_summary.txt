@@ -1,0 +1,2 @@
+Conservative threshold (FPR≈5%): 0.935897
+Best-F1 threshold (DEV): 0.464286, F1≈0.902
