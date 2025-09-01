@@ -71,13 +71,39 @@ streamlit run src/dashboard.py
 ```
 
 ---
+## Reproducibility Pack
+
+A minimal reproducibility pack is provided under the `reproducibility/` folder.  
+It contains environment specifications, example configuration, and a quickstart script.
+
+### Contents
+- `environment.yml` – Conda environment definition  
+- `requirements.txt` – Python package requirements (pip)  
+- `.env.example` – Example Reddit API credentials file (copy to `.env`)  
+- `run_quickstart.sh` – One-click script to verify dependencies and create a synthetic dataset  
+- `scripts/verify_setup.py` – Python script to verify environment and data  
+- `data/README.txt` – Explanation of data folders  
+
+### Quickstart
+1. Create the environment:
+```bash
+conda env create -f reproducibility/environment.yml
+conda activate reddit_privacy
+```
+ ----
 
 ## Ethics
 - Only public Reddit data was used.  
 - No identity inference or cross-platform linkage was attempted.  
 - All analysis is aggregate; usernames were anonymised after feature extraction.  
 
----
+## References
+
+- Nissenbaum, H. (2004). Privacy as contextual integrity. Washington Law Review, 79(1), 119–158.  
+- Solove, D. J. (2006). A taxonomy of privacy. University of Pennsylvania Law Review, 154(3), 477–564.  
+- Narayanan, A., & Shmatikov, V. (2008). Robust de-anonymization of large sparse datasets. IEEE Symposium on Security and Privacy.  
+- Ratner, A., et al. (2017). Snorkel: Rapid training data creation with weak supervision. PVLDB, 11(3), 269–282.  
+- Ke, G., et al. (2017). LightGBM: A highly efficient gradient boosting decision tree. NeurIPS 30.  
 
 ## Citation
 If you use this repository, please cite:
