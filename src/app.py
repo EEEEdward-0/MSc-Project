@@ -98,20 +98,26 @@ def auto_label_impl(input_csv: Path, out_csv: Path, t_high: float = 3.0, t_low: 
     """
     df = _read_csv(input_csv).copy()
 
+    # Safe getter: return numeric Series aligned to df.index; default zeros if missing
+    def _col(df, name):
+        if name in df:
+            return pd.to_numeric(df[name], errors="coerce").fillna(0.0)
+        else:
+            return pd.Series(0.0, index=df.index)
+
     def p95_norm(x):
         x = pd.to_numeric(x, errors="coerce").fillna(0.0)
         p = np.percentile(x, 95) if len(x) else 1.0
         p = p if p > 1e-9 else 1.0
         return (x / p).clip(0, 1)
 
-    id_signal = 2.0 * (
-        (pd.to_numeric(df.get("pii_email_rate", 0), errors="coerce") > 0).astype(float)
-    ) + 2.0 * ((pd.to_numeric(df.get("pii_phone_rate", 0), errors="coerce") > 0).astype(float))
+    id_signal = 2.0 * ((_col(df, "pii_email_rate") > 0).astype(float)) \
+        + 2.0 * ((_col(df, "pii_phone_rate") > 0).astype(float))
 
     cont_signal = (
-        1.5 * p95_norm(df.get("sens_hit_rate", 0))
-        + 2.0 * pd.to_numeric(df.get("rule_score", 0), errors="coerce").fillna(0.0)
-        + 0.5 * p95_norm(np.log1p(pd.to_numeric(df.get("n_docs", 0), errors="coerce").fillna(0.0)))
+        1.5 * p95_norm(_col(df, "sens_hit_rate"))
+        + 2.0 * _col(df, "rule_score")
+        + 0.5 * p95_norm(np.log1p(_col(df, "n_docs")))
     )
 
     s = id_signal + cont_signal
@@ -401,7 +407,23 @@ def main():
         build_features(_P(args.input), _P(args.out))
 
     elif cmd == "split":
-        from src.dataset.split import split_labeled
+        try:
+            from src.dataset.split import split_labeled  # prefer project implementation
+        except Exception:
+            # Fallback: minimal splitter if src.dataset.split is unavailable
+            from sklearn.model_selection import train_test_split
+
+            def split_labeled(input_csv: Path, outdir: Path, test_size: float = 0.2, random_state: int = 42):
+                df_local = _read_csv(input_csv).copy()
+                stratify_col = df_local["y"] if "y" in df_local.columns else None
+                train_df, test_df = train_test_split(
+                    df_local, test_size=test_size, random_state=random_state, stratify=stratify_col
+                )
+                outdir = Path(outdir)
+                outdir.mkdir(parents=True, exist_ok=True)
+                _write_csv(outdir / "train.csv", train_df)
+                _write_csv(outdir / "test.csv", test_df)
+                print(f"Saved {len(train_df)} train rows, {len(test_df)} test rows to {outdir}")
 
         split_labeled(
             _P(args.input),

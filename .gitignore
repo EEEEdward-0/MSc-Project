@@ -44,3 +44,13 @@ artifacts/
 # Credentials
 praw.ini
 configs/praw.ini
+data/
+models/
+*.joblib
+*.npy
+
+data/
+models/
+*.joblib
+*.npy
+

@@ -5,26 +5,45 @@ import numpy as np
 import pandas as pd
 from sklearn.model_selection import StratifiedKFold, train_test_split
 
-ROOT = Path(__file__).resolve().parents[2]  # 项目根目录
-IN = ROOT / "data" / "processed" / "train.csv"
-OUTDIR = ROOT / "data" / "processed"
-OUTDIR.mkdir(parents=True, exist_ok=True)
 
-df = pd.read_csv(IN)
-drop = [c for c in ["username"] if c in df.columns]
-df = df.drop(columns=drop)
-y = df["label"].astype(int)
-
-# 80/20 分层切分（固定随机种子）
-dev, test = train_test_split(df, test_size=0.2, stratify=y, random_state=42)
-test.to_csv(OUTDIR / "test.csv", index=False)
-
-# 在 dev 内做 5 折
-dev = dev.copy()
-dev["fold"] = -1
-skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
-for fold, (_, val_idx) in enumerate(skf.split(dev, dev["label"].astype(int))):
-    dev.loc[dev.iloc[val_idx].index, "fold"] = fold
-
-dev.to_csv(OUTDIR / "dev_folds.csv", index=False)
-print(f"Saved {len(dev)} dev rows with folds, {len(test)} test rows to {OUTDIR}")
+def split_labeled(
+    input_csv: Path,
+    outdir: Path,
+    test_size: float = 0.2,
+    random_state: int = 42,
+    folds: int = 5
+) -> None:
+    """
+    Split a labeled dataset into stratified train/test, add folds to train.
+    - Reads input_csv
+    - Drops 'username' if present
+    - Ensures label column is 'y' (renames 'label' to 'y' if needed)
+    - Splits into train/test stratified by 'y'
+    - Writes test.csv and train.csv to outdir
+    - Adds 'fold' column to train set using StratifiedKFold
+    - Writes dev_folds.csv (train with folds) to outdir
+    - Prints summary of counts
+    """
+    outdir.mkdir(parents=True, exist_ok=True)
+    df = pd.read_csv(input_csv)
+    if "username" in df.columns:
+        df = df.drop(columns=["username"])
+    if "y" not in df.columns:
+        if "label" in df.columns:
+            df = df.rename(columns={"label": "y"})
+        else:
+            raise ValueError("No label column found (expected 'y' or 'label').")
+    y = df["y"].astype(int)
+    train, test = train_test_split(
+        df, test_size=test_size, stratify=y, random_state=random_state
+    )
+    test.to_csv(outdir / "test.csv", index=False)
+    train = train.copy()
+    train["fold"] = -1
+    skf = StratifiedKFold(n_splits=folds, shuffle=True, random_state=random_state)
+    for fold, (_, val_idx) in enumerate(skf.split(train, train["y"].astype(int))):
+        train.loc[train.iloc[val_idx].index, "fold"] = fold
+    train.to_csv(outdir / "dev_folds.csv", index=False)
+    print(
+        f"Saved {len(train)} train rows with folds, {len(test)} test rows to {outdir}"
+    )
