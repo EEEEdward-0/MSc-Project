@@ -1,56 +1,23 @@
-# Python
+# OS / IDE
+.DS_Store
+.vscode/
 __pycache__/
 *.pyc
-*.pyo
-*.pyd
-*.egg-info/
-.pytest_cache/
-.mypy_cache/
 
-# Notebooks
-.ipynb_checkpoints/
-
-# Node / Frontend
-node_modules/
-dist/
-
-# Virtual environments
-.venv*/
-venv/
-env/
-.env
-*.env
-
-# Data (reproducible)
-data/interim/
-data/processed/
-
-# Models (large, regenerable)
-models/**/oof*.csv
-models/**/oof*.npy
-models/**/pred_test*.csv
-models/**/lgbm_fold*.pkl
-models/**/train_log_fold*.csv
-
-# Logs & artifacts
-logs/
-artifacts/
-
-# OS / Editors
-.DS_Store
-.idea/
-.vscode/
-
-# Credentials
-praw.ini
-configs/praw.ini
-data/
+# Big data & models (local only)
+data/raw/
 models/
+data/processed/text/
+data/processed/blends/
+data/processed/comment_*.csv
+data/processed/comments_*.csv
+data/processed/train_*backup*.csv
+data/processed/dev_folds*.csv
+data/processed/splits/dev_*.csv
+
+# Caches
 *.joblib
 *.npy
-
-data/
-models/
-*.joblib
-*.npy
-
+*.npz
+*.png
+*.pdf

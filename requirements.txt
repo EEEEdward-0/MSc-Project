@@ -5,3 +5,5 @@ lightgbm>=4.0
 matplotlib>=3.7
 tqdm>=4.66
 praw>=7.7
+streamlit>=1.26
+streamlit-echarts>=0.4.0

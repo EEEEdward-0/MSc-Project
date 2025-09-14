@@ -1,5 +1,0 @@
-n_posts
-n_comments
-n_upvotes
-text_len_posts
-text_len_comments

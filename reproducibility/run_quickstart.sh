@@ -1,46 +1,37 @@
-#!/usr/bin/env bash
-set -euo pipefail
-
-echo "[1/4] Verifying Python and dependencies..."
-python - <<'PY'
-import sys, platform
-print("Python:", sys.version.replace("\n"," "))
-import pandas, numpy, sklearn, lightgbm, matplotlib, tqdm
-print("pandas", pandas.__version__, "| numpy", numpy.__version__, "| sklearn", sklearn.__version__, "| lightgbm", lightgbm.__version__)
-PY
-
-echo "[2/4] Checking repository layout..."
-for d in data data/processed models src; do
-  [ -d "$d" ] || { echo "Creating $d"; mkdir -p "$d"; }
-done
-
-echo "[3/4] Using sample features to run a dry-run scoring step..."
-SAMPLE=data/processed/features_sample.csv
-if [ ! -f "$SAMPLE" ]; then
-  echo "Sample features not found; creating a tiny synthetic file at $SAMPLE"
-  python - <<'PY'
-import pandas as pd, numpy as np, os
-os.makedirs("data/processed", exist_ok=True)
-n=50
-df=pd.DataFrame({
-  "identity": np.random.beta(2,5,size=n),
-  "sensitive": np.random.beta(2,5,size=n),
-  "exposure": np.random.beta(2,5,size=n),
-  "activity": np.random.beta(2,5,size=n),
-  "volume": np.random.beta(2,5,size=n),
-  "concentration": np.random.beta(2,5,size=n),
-  "label": np.random.randint(0,2,size=n)
-})
-df.to_csv("data/processed/features_sample.csv", index=False)
-print("Wrote data/processed/features_sample.csv with shape", df.shape)
-PY
-fi
-
-echo "[4/4] Running verification script..."
-python scripts/verify_setup.py || { echo "scripts/verify_setup.py not found; using inline fallback"; python - <<'PY'
-import pandas as pd, numpy as np
-print("Loaded sample data:", pd.read_csv("data/processed/features_sample.csv").shape)
-print("OK")
-PY
-}
-echo "All good. See data/processed/features_sample.csv"
+@@ -src/app.py
+@@ def train_cv_impl(data_csv: str, outdir: str, folds: int = 5, random_state: int = 42):
+-    df = _read_csv(data_csv)
+-    feat_df, feat_cols = _prepare_features(df, columns=None)
+-    _save_feature_columns(outdir, feat_cols)
+-
+-    X_all = feat_df.fillna(0.0).to_numpy(dtype=float)
+-    if "y" not in df.columns:
+-        raise KeyError("训练需要标签列 y，请先运行 auto-label 生成 train.csv。")
+-    y_all = df["y"].astype(int).to_numpy()
++    df = _read_csv(data_csv)
++    feat_df, feat_cols = _prepare_features(df, columns=None)
++    _save_feature_columns(outdir, feat_cols)
++
++    # keep DataFrame with column names to avoid sklearn/lightgbm warnings
++    X_all_df = feat_df.fillna(0.0).astype(float)
++    if "y" not in df.columns:
++        raise KeyError("训练需要标签列 y，请先运行 auto-label 生成 train.csv。")
++    y_all = df["y"].astype(int).to_numpy()
+@@ def train_cv_impl(data_csv: str, outdir: str, folds: int = 5, random_state: int = 42):
+-        Xtr, Xva = X_all[tr], X_all[va]
+-        ytr, yva = y_all[tr], y_all[va]
+-
+-        lgb_train = lgb.Dataset(Xtr, label=ytr)
+-        lgb_valid = lgb.Dataset(Xva, label=yva, reference=lgb_train)
++        Xtr_df, Xva_df = X_all_df.iloc[tr], X_all_df.iloc[va]
++        ytr, yva = y_all[tr], y_all[va]
++
++        lgb_train = lgb.Dataset(Xtr_df.to_numpy(), label=ytr)
++        lgb_valid = lgb.Dataset(Xva_df.to_numpy(), label=yva, reference=lgb_train)
+@@ def train_cv_impl(data_csv: str, outdir: str, folds: int = 5, random_state: int = 42):
+-        clf.fit(Xtr, ytr)
+-
+-        proba = clf.predict_proba(Xva)[:, 1]
++        clf.fit(Xtr_df, ytr)
++
++        proba = clf.predict_proba(Xva_df)[:, 1]

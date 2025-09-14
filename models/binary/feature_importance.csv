@@ -1,8 +1,0 @@
-feature,importance
-text_frac_sensitive,0.7136215130373432
-text_mean_prob,0.16545456356137966
-username_len,0.05553635974427798
-username_digit_frac,0.04872262967119586
-username_seg_count,0.015702743054328335
-username_has_year,0.0009621909314749366
-username_has_date,0.0
