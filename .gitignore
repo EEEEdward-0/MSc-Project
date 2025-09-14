@@ -1,23 +1,23 @@
+
 # OS / IDE
 .DS_Store
 .vscode/
 __pycache__/
 *.pyc
 
-# Big data & models (local only)
-data/raw/
-models/
-data/processed/text/
-data/processed/blends/
-data/processed/comment_*.csv
-data/processed/comments_*.csv
-data/processed/train_*backup*.csv
-data/processed/dev_folds*.csv
-data/processed/splits/dev_*.csv
+# Virtual env
+.venv*/
+env/
+*.egg-info/
 
-# Caches
+# Data & models (keep them local; demo branch will add tiny samples)
+data/raw/
+data/processed/
+data/splits/
+models/
+
+# Logs / cache
+*.log
 *.joblib
 *.npy
 *.npz
-*.png
-*.pdf
