@@ -15,34 +15,37 @@ The project implements a reproducible pipeline to audit privacy risks on Reddit 
 
 ---
 
-## Installation
+## Version History
 
-### 1. Clone the repository
-```bash
-git clone https://gitlab.act.reading.ac.uk/ep839056/privacy_audit_redditmsc-project.git
-cd privacy_audit_redditmsc-project
-```
+- **v1.0.0 (Sep 2025)**  
+  Initial release with full pipeline (data collection, featurization, weak supervision, model training, visualization).
 
-### 2. Create environment (Python 3.11+ recommended)
-Using Conda:
-```bash
-conda create -n reddit_privacy python=3.11
-conda activate reddit_privacy
-```
+- **v1.1.0 (Sep 2025)**  
+  Added Quickstart demo mode with synthetic data, improved Streamlit dashboard compatibility, and reproducibility pack.
 
-### 3. Install dependencies
-```bash
-pip install -r requirements.txt
-```
+- **v1.2.0 (Demo branch, Sep 2025)**  
+  Dedicated branch for lightweight demo.  
+  Runs with bundled synthetic data only, skips Reddit API.  
+  Simplified training/evaluation for presentation purposes.
 
-Or with Poetry (if using `pyproject.toml`):
+- **v1.2.1 (Demo branch, Sep 2025)**  
+  Refined demo branch with added feature toggles for local training vs demo mode, improved documentation, and synchronization support for GitHub and GitLab.
+
+---
+
+## Quickstart (Demo mode)
+
+You can run a quick demo without Reddit API credentials or raw data by executing the script below. It generates synthetic data and launches the Streamlit dashboard:
+
 ```bash
-poetry install
+bash scripts/quickstart_demo.sh
 ```
 
 ---
 
-## Usage
+## Full Workflow (Research mode)
+
+**Warning:** Reddit API credentials and raw data are required for the full workflow and are not included in this repository.
 
 ### Data collection
 Fetch Reddit users and posts (requires Reddit API credentials in `.env` or `config.py`):
