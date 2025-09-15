@@ -33,6 +33,32 @@ The project implements a reproducible pipeline to audit privacy risks on Reddit 
 
 ---
 
+## Changelog
+
+### v1.2.1 (Sep 2025)
+- Added toggle in Streamlit UI to switch between Demo mode and Local (full) mode.
+- Improved documentation with Demo vs Full Workflow comparison table.
+- Synced repository across GitHub and GitLab.
+
+### v1.2.0 (Sep 2025)
+- Created dedicated Demo branch with bundled synthetic data.
+- Simplified training and evaluation flow for presentation.
+- Removed direct Reddit API dependency in demo branch.
+
+### v1.1.0 (Sep 2025)
+- Added Quickstart demo script and reproducibility pack.
+- Enhanced Streamlit dashboard compatibility.
+
+### v1.0.0 (Sep 2025)
+- Initial release with complete pipeline:
+  - Data collection
+  - Feature engineering
+  - Weak supervision
+  - Model training & evaluation
+  - Streamlit visualization
+
+---
+
 ## Minimal Demo (Recommended for quick testing)
 
 You can run the demo without Reddit API credentials or raw data. This is the simplest way for supervisors/examiners to verify the project.
@@ -69,6 +95,19 @@ You can run the demo without Reddit API credentials or raw data. This is the sim
    In the sidebar, you will see options for:
    - **Auto Detect / Local (trained)**
    - **Demo only (sliders)** ← active in demo mode
+
+---
+
+## Demo vs Full Workflow (at a glance)
+
+| Aspect             | Demo Mode (default)                        | Full Workflow (research)               |
+|--------------------|--------------------------------------------|----------------------------------------|
+| Data source        | Synthetic demo data (bundled)              | Reddit API + raw user/post data (local)|
+| Featurization      | Pre-generated / synthetic features         | Full feature extraction from raw data  |
+| Labelling          | Fixed heuristic demo labels                | Weak supervision (auto-label)          |
+| Models             | Pretrained lightweight demo models         | Cross-validated training (LogReg / LGBM / RF) |
+| Reproducibility    | Runs instantly, no external dependencies   | Requires API credentials & raw dataset |
+| Streamlit dashboard| **Demo only** sliders active               | Full functionality with training/eval  |
 
 ---
 
