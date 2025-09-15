@@ -11,6 +11,8 @@ Code and comments are written with an undergraduate CS audience in mind:
 from __future__ import annotations
 import json
 from pathlib import Path
+ # Resolve repository root (…/privacy_audit_reddit)
+ROOT = Path(__file__).resolve().parents[1]
 from typing import List, Dict, Optional, Tuple
 
 import streamlit as st
@@ -27,6 +29,10 @@ TRANSLATIONS: Dict[str, Dict] = {
             "banner_title": "Privacy Audit · Reddit",
             "banner_sub": "基于模型的账户隐私风险可视化概览",
             "language": "语言",
+            "data_source": "数据来源",
+            "mode_auto": "自动检测",
+            "mode_local": "本地训练结果",
+            "mode_demo": "仅演示（滑块）",
             "user": "用户",
             "user_manual": "或手动输入用户名",
             "demo_box": "演示因子（0–100）",
@@ -58,6 +64,10 @@ TRANSLATIONS: Dict[str, Dict] = {
             "banner_title": "Privacy Audit · Reddit",
             "banner_sub": "Model-based privacy risk overview",
             "language": "Language",
+            "data_source": "Data Source",
+            "mode_auto": "Auto Detect",
+            "mode_local": "Local (trained)",
+            "mode_demo": "Demo only (sliders)",
             "user": "User",
             "user_manual": "Or type a username",
             "demo_box": "Demo factors (0–100)",
@@ -221,6 +231,7 @@ def load_csv_cached(p: str) -> Optional[pd.DataFrame]:
     except Exception:
         return None
 
+
 @st.cache_data(show_spinner=False)
 def load_json_cached(p: str) -> Optional[dict]:
     """Read a JSON file with caching and graceful failure (returns None)."""
@@ -231,6 +242,57 @@ def load_json_cached(p: str) -> Optional[dict]:
         return json.loads(path.read_text(encoding="utf-8"))
     except Exception:
         return None
+
+# ---- Demo readiness check & threshold loader ----
+FEATURES = ROOT / "data/processed/features.csv"
+MODEL_DIR = ROOT / "models/cv_logreg"
+THR_FILE  = MODEL_DIR / "threshold.txt"
+
+def ensure_ready() -> str:
+    """Prefer local assets; fall back to demo gracefully.
+
+    Returns one of:
+      - 'ok'          : features and model are available
+      - 'no_model'    : features exist but model folder is missing
+      - 'no_features' : model exists but features.csv is missing
+      - 'demo'        : neither exists; run in pure demo (sliders only)
+
+    This function never calls st.stop(); the page should always render so
+    users can still play with the demo sliders or import a user JSON.
+    """
+    have_features = FEATURES.exists()
+    have_model = MODEL_DIR.exists()
+
+    if have_features and have_model:
+        return "ok"
+
+    if not have_features and not have_model:
+        st.warning(
+            "Demo mode: local features and models not found. You can still use the sliders or import a user JSON. "
+            "To enable full functionality later, run your local pipeline (featurize/train-cv)."
+        )
+        return "demo"
+
+    if not have_model:
+        st.warning(
+            "Model folder not found: models/cv_logreg/. The UI will run in slider/demo mode; "
+            "accuracy and importance cards may be empty until you train a model."
+        )
+        return "no_model"
+
+    # have_model is True but features.csv is missing
+    st.warning(
+        "data/processed/features.csv not found. Model cards can still show accuracy if metrics exist, "
+        "but feature tables derived from features.csv will be hidden."
+    )
+    return "no_features"
+
+def load_threshold(default: float = 0.5) -> float:
+    """Load decision threshold from models/cv_logreg/threshold.txt if present."""
+    try:
+        return float(THR_FILE.read_text().strip())
+    except Exception:
+        return default
 
 def first_non_empty_csv(paths: List[Path]) -> Optional[pd.DataFrame]:
     """Return the first existing, non-empty CSV from a list of candidate paths."""
@@ -246,7 +308,7 @@ def load_user_options() -> List[str]:
 
     Returns ["Demo"] if the directory is absent or contains no files.
     """
-    raw_dir = Path("data/raw/users")
+    raw_dir = ROOT / "data/raw/users"
     if raw_dir.exists():
         names = sorted(
             {p.stem for p in raw_dir.glob("*.json")} |
@@ -260,11 +322,66 @@ def load_user_options() -> List[str]:
 # Page config.
 st.set_page_config(page_title="Privacy Audit", layout="wide")
 inject_css()
+# --- Data source toggle: Auto / Local (trained) / Demo ---
+ds_label = t("en", "app.data_source")  # label text localized later
+
+# Probe availability once for rendering the choices
+_have_features = FEATURES.exists()
+_have_model = MODEL_DIR.exists()
+_local_ok = _have_features and _have_model
+
+# Build display labels (append '(unavailable)' when local assets are missing)
+opt_auto_label  = t("en", "app.mode_auto")
+opt_local_label = t("en", "app.mode_local") + ("  (unavailable)" if not _local_ok else "")
+opt_demo_label  = t("en", "app.mode_demo")
+
+# Present to user
+DS_OPTIONS = [opt_auto_label, opt_local_label, opt_demo_label]
+ds_choice_display = st.sidebar.radio(ds_label, DS_OPTIONS, index=0, key="ds_mode")
+
+# Map selection back to internal codes (match by startswith to ignore the '(unavailable)' suffix)
+label2code = {
+    t("en", "app.mode_auto"): "auto",
+    t("en", "app.mode_local"): "local",
+    t("en", "app.mode_demo"): "demo",
+}
+# Recover the base label (strip suffix if present)
+_base_label = next((k for k in label2code if ds_choice_display.startswith(k)), t("en", "app.mode_auto"))
+_ds_choice = label2code[_base_label]
+
+# Detect current availability for auto mode resolution
+_detected = ensure_ready()
+
+# Resolve final mode according to the user's toggle
+if _ds_choice == "demo":
+    _mode = "demo"
+elif _ds_choice == "local":
+    if _local_ok:
+        _mode = "ok"  # full local experience
+    elif _have_model and not _have_features:
+        _mode = "no_features"
+        st.info("Local model present but features.csv is missing. Some tables will be hidden.")
+    elif _have_features and not _have_model:
+        _mode = "no_model"
+        st.info("Local features present but model folder is missing. Train a model to enable full local mode.")
+    else:
+        # Hard block: force back to demo if entirely unavailable
+        _mode = "demo"
+        st.warning("Local (trained) is unavailable — required files not found. Showing Demo instead.")
+else:
+    _mode = _detected  # auto
+
+# Threshold depends on model presence
+_current_thr = load_threshold(0.5) if _mode in ("ok", "no_features") else 0.5
+
+# Visual cue when Local is unavailable but shown in the radio
+if not _local_ok:
+    st.sidebar.caption("Local (trained) is unavailable until you run featurize + train-cv.")
 
 # Sidebar: language & user selection
 # Show full names ("English", "Chinese") to the user, but translate them to internal codes ("en", "zh").
 LANG_MAP = {"English": "en", "Chinese": "zh"}
-lang_display = st.sidebar.selectbox("Language", list(LANG_MAP.keys()), index=0)
+lang_display = st.sidebar.selectbox(t("en","app.language"), list(LANG_MAP.keys()), index=0)
 lang = LANG_MAP[lang_display]
 
 user_opts = load_user_options()
@@ -283,6 +400,10 @@ st.markdown(
     unsafe_allow_html=True,
 )
 st.caption(f'{t(lang,"app.by_model")}', unsafe_allow_html=True)
+if _mode in ("ok", "no_features"):
+    st.caption(f'Loaded model: models/cv_logreg  ·  threshold={_current_thr:.3f}')
+else:
+    st.caption('Demo mode: sliders are active (no local model).')
 
 # Default demo factors.
 factors = {"identity":78, "sensitive":52, "exposure":33, "activity":60, "volume":44, "concentration":20}
@@ -298,7 +419,7 @@ def derive_factors_from_user(username: str) -> Optional[Dict[str, float]]:
     """
     if not username:
         return None
-    raw = load_json_cached(str(Path("data/raw/users")/f"{username}.json"))
+    raw = load_json_cached(str((ROOT/"data/raw/users")/f"{username}.json"))
     if not raw:
         return None
     # Heuristic: use post/comment counts and bio length (0–100)
@@ -462,9 +583,9 @@ def localize_feature_table(df: pd.DataFrame, lang: str) -> pd.DataFrame:
     return df
 
 # Model section: accuracy + 3D donut per model.
-P_BIN   = Path("models/binary")
-P_SEM   = Path("models/semantic")
-P_BLEND = Path("models/blend")
+P_BIN   = ROOT / "models/cv_logreg"  # Logistic Regression (tabular)
+P_SEM   = ROOT / "models/cv_lgbm"    # LightGBM (tabular)
+P_BLEND = ROOT / "models/cv_rf"      # Random Forest (tabular)
 
 def show_model_card(title: str, metrics: Optional[pd.DataFrame], fi_df: Optional[pd.DataFrame], pie_key: str):
     """Render a compact model card: title, accuracy chip and 3D donut chart.
@@ -506,19 +627,20 @@ st.markdown("---")
 c1, c2, c3 = st.columns(3)
 
 with c1:
-    df_m = first_non_empty_csv([P_BIN/"metrics_cv.csv"])
+    df_m = first_non_empty_csv([P_BIN/"metrics_cv.csv", P_BIN/"cv_metrics.csv"])
     df_fi = first_non_empty_csv([P_BIN/"feature_importance.csv", P_BIN/"feature_importance_name.csv"])
     show_model_card(t(lang,"app.model_binary"), df_m, df_fi, "pie_bin")
 
 with c2:
-    df_m = first_non_empty_csv([P_SEM/"metrics_cv.csv"])
+    df_m = first_non_empty_csv([P_SEM/"metrics_cv.csv", P_SEM/"cv_metrics.csv"])
     df_fi = first_non_empty_csv([P_SEM/"feature_importance.csv", P_SEM/"feature_importance_name.csv"])
     show_model_card(t(lang,"app.model_semantic"), df_m, df_fi, "pie_sem")
 
 with c3:
     # --- Blend/Ensemble: only show title and accuracy chip (no note/caption) ---
-    st.markdown(f'<div style="font-weight:900;font-size:18px;color:#0f172a;margin:0 0 6px 0;">{t(lang,"app.model_blend")}</div>', unsafe_allow_html=True)
-    df_m_blend = first_non_empty_csv([P_BLEND/"metrics_cv.csv"])
+    _rf_title = "随机森林" if lang=="zh" else "Random Forest"
+    st.markdown(f'<div style="font-weight:900;font-size:18px;color:#0f172a;margin:0 0 6px 0;">{_rf_title}</div>', unsafe_allow_html=True)
+    df_m_blend = first_non_empty_csv([P_BLEND/"metrics_cv.csv", P_BLEND/"cv_metrics.csv"])
     if df_m_blend is not None and not df_m_blend.empty and "brier" in df_m_blend.columns:
         try:
             b = float(df_m_blend.iloc[0]["brier"])
