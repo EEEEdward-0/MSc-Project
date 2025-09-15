@@ -33,13 +33,42 @@ The project implements a reproducible pipeline to audit privacy risks on Reddit 
 
 ---
 
-## Quickstart (Demo mode)
+## Minimal Demo (Recommended for quick testing)
 
-You can run a quick demo without Reddit API credentials or raw data by executing the script below. It generates synthetic data and launches the Streamlit dashboard:
+You can run the demo without Reddit API credentials or raw data. This is the simplest way for supervisors/examiners to verify the project.
 
-```bash
-bash scripts/quickstart_demo.sh
-```
+1. **Clone repository**
+   ```bash
+   git clone https://github.com/EEEEdward-0/MSc-Project.git
+   cd MSc-Project
+   ```
+
+2. **Set up environment**
+   ```bash
+   conda env create -f reproducibility/environment.yml
+   conda activate reddit_privacy
+   ```
+   or
+   ```bash
+   pip install -r reproducibility/requirements.txt
+   ```
+
+3. **Run demo script**
+   ```bash
+   bash scripts/quickstart_demo.sh
+   ```
+
+   This will:
+   - Verify dependencies
+   - Generate synthetic demo features and models
+   - Launch the Streamlit dashboard
+
+4. **Open dashboard**
+   Visit [http://localhost:8501](http://localhost:8501) in your browser.
+
+   In the sidebar, you will see options for:
+   - **Auto Detect / Local (trained)**
+   - **Demo only (sliders)** ← active in demo mode
 
 ---
 
