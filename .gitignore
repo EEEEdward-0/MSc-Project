@@ -21,3 +21,10 @@ models/
 *.joblib
 *.npy
 *.npz
+.venv*/
+venv*/
+.env
+.idea/
+.vscode/
+__pycache__/
+*.pyc
